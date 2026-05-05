@@ -18,7 +18,7 @@ groups:
       - { symbol: "GBPUSD=X", label: "GBP/USD",  kind: fx }
       - { symbol: "DX-Y.NYB", label: "DXY",      kind: index }
 
-  - name: 米国金利
+  - name: 金利
     instruments:
       - { symbol: "^FVX", label: "UST 5Y",  kind: yield }
       - { symbol: "^TNX", label: "UST 10Y", kind: yield }
