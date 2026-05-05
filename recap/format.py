@@ -18,25 +18,16 @@ def _fmt_quote(q: Quote) -> str:
     if kind == "yield":
         # Yahoo returns yields as percent values (e.g. 4.32 = 4.32%).
         change_bp = (q.last - q.prev) * 100.0
-        return f"  {label} {q.last:>7.2f}%   {change_bp:+.1f}bp"
+        return f"  {label} {q.last:>7.2f}%   ({change_bp:+.1f}bp)"
 
     if kind == "fx_jpy":
-        return (
-            f"  {label} {q.last:>10.2f}   "
-            f"{q.change:+.2f}  ({q.change_pct:+.2f}%)"
-        )
+        return f"  {label} {q.last:>10.2f}   ({q.change_pct:+.2f}%)"
 
     if kind == "fx":
-        return (
-            f"  {label} {q.last:>10.4f}   "
-            f"{q.change:+.4f} ({q.change_pct:+.2f}%)"
-        )
+        return f"  {label} {q.last:>10.4f}   ({q.change_pct:+.2f}%)"
 
     # index (default)
-    return (
-        f"  {label} {q.last:>12,.2f}   "
-        f"{q.change:+,.2f} ({q.change_pct:+.2f}%)"
-    )
+    return f"  {label} {q.last:>12,.2f}   ({q.change_pct:+.2f}%)"
 
 
 def _fmt_missing(label: str) -> str:
