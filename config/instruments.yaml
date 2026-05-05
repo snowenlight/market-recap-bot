@@ -1,0 +1,31 @@
+# Instruments to include in the recap email.
+#
+# Each group becomes a section in the email. Order is preserved.
+# `symbol` is a Yahoo Finance ticker.
+# `kind` controls how the value is formatted and how change is shown:
+#   - fx_jpy : 2 decimals, change in pips (price diff) and %
+#   - fx     : 4 decimals, change in pips (price diff) and %
+#   - yield  : percent with 2 decimals, change in basis points
+#   - index  : comma-separated, 2 decimals, change in absolute and %
+#
+# To add an instrument, append a row. To remove, delete or comment out.
+
+groups:
+  - name: 為替
+    instruments:
+      - { symbol: "JPY=X",    label: "USD/JPY",  kind: fx_jpy }
+      - { symbol: "EURUSD=X", label: "EUR/USD",  kind: fx }
+      - { symbol: "GBPUSD=X", label: "GBP/USD",  kind: fx }
+      - { symbol: "DX-Y.NYB", label: "DXY",      kind: index }
+
+  - name: 米国金利
+    instruments:
+      - { symbol: "^FVX", label: "UST 5Y",  kind: yield }
+      - { symbol: "^TNX", label: "UST 10Y", kind: yield }
+      - { symbol: "^TYX", label: "UST 30Y", kind: yield }
+
+  - name: 株価指数
+    instruments:
+      - { symbol: "^GSPC", label: "S&P 500", kind: index }
+      - { symbol: "^IXIC", label: "NASDAQ",  kind: index }
+      - { symbol: "^DJI",  label: "Dow",     kind: index }

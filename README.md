@@ -1,1 +1,108 @@
 # market-recap-bot
+
+NY引け後に米国市場の主要数値(為替・金利・株価指数)をメール配信する個人プロジェクト。
+
+## 配信内容(MVP)
+
+- 為替: USD/JPY, EUR/USD, GBP/USD, DXY
+- 米国金利: UST 5Y / 10Y / 30Y
+- 株価指数: S&P 500, NASDAQ, Dow
+
+将来的に LLM によるナラティブ解説、欧州・東京クローズ版を追加予定。
+
+## 配信例
+
+```
+【Market Recap】 2026/05/05 (火) NY引け
+──────────────────────────────
+
+■ 為替
+  USD/JPY        157.23   +0.38  (+0.24%)
+  EUR/USD        1.1690   -0.0036 (-0.31%)
+  ...
+
+■ 米国金利
+  UST 10Y       4.45%   +6.8bp
+  ...
+```
+
+## セットアップ
+
+### 1. Gmail アプリパスワードを発行
+
+1. Google アカウントで 2段階認証を有効化
+2. <https://myaccount.google.com/apppasswords> でアプリパスワードを発行
+3. 16桁のパスワードを控える
+
+### 2. GitHub Secrets を設定
+
+リポジトリの **Settings → Secrets and variables → Actions** で以下を登録:
+
+| Secret 名 | 値 |
+| --- | --- |
+| `GMAIL_ADDRESS` | 送信元 Gmail アドレス |
+| `GMAIL_APP_PASSWORD` | 上で発行したアプリパスワード |
+| `RECIPIENT` | 配信先(個人アドレス、または将来 Google Group のアドレス) |
+
+### 3. 動作確認
+
+GitHub の **Actions** タブから `market-recap` ワークフローを開き、
+`Run workflow` で `dry_run = true` を選んで実行 → ログに本文が出れば OK。
+
+`dry_run = false` で実行すると実際に送信されます。
+
+### 4. 自動配信
+
+`.github/workflows/recap.yml` の `schedule` で平日 22:00 UTC に自動実行されます。
+
+| 時期 | 実行時刻(NY) | 実行時刻(JST) |
+| --- | --- | --- |
+| EDT(夏時間) | 18:00 ET(NY引け2時間後) | 翌 07:00 JST |
+| EST(冬時間) | 17:00 ET(NY引け1時間後) | 翌 07:00 JST |
+
+## ローカル実行
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env  # 値を埋める
+
+# 数値とフォーマットだけ確認(送信なし)
+python -m recap --dry-run
+
+# 実際に送信
+python -m recap
+```
+
+## 銘柄の追加・削除
+
+`config/instruments.yaml` を編集するだけ。コード変更は不要。
+
+```yaml
+groups:
+  - name: 為替
+    instruments:
+      - { symbol: "JPY=X", label: "USD/JPY", kind: fx_jpy }
+      # 行を足す/消すだけで反映
+```
+
+`symbol` は [Yahoo Finance](https://finance.yahoo.com/) のティッカー、
+`kind` は表示形式(`fx`, `fx_jpy`, `yield`, `index`)を指定します。
+
+## 構成
+
+```
+recap/
+  __main__.py   # エントリポイント (fetch → format → send)
+  config.py     # YAML 読み込み
+  data.py       # yfinance データ取得
+  format.py     # メール本文整形
+  mail.py       # Gmail SMTP 送信
+config/
+  instruments.yaml
+.github/workflows/
+  recap.yml
+```
+
+## ライセンス・免責
+
+個人プロジェクトです。配信内容は投資助言ではありません。
