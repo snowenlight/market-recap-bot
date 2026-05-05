@@ -16,7 +16,6 @@ groups:
       - { symbol: "JPY=X",    label: "USD/JPY",  kind: fx_jpy }
       - { symbol: "EURUSD=X", label: "EUR/USD",  kind: fx }
       - { symbol: "GBPUSD=X", label: "GBP/USD",  kind: fx }
-      - { symbol: "DX-Y.NYB", label: "DXY",      kind: index }
 
   - name: 金利
     instruments:
@@ -32,14 +31,13 @@ groups:
 
   - name: 株価指数
     instruments:
-      - { symbol: "^GSPC", label: "S&P 500", kind: index }
-      - { symbol: "^IXIC", label: "NASDAQ",  kind: index }
-      - { symbol: "^DJI",  label: "Dow",     kind: index }
+      - { symbol: "^GSPC", label: "S&P 500",  kind: index }
+      - { symbol: "^N225", label: "Nikkei225", kind: index }
 
 # Economic calendar source: Forex Factory weekly XML feed.
 # Filters events to the next US business day matching `currencies` and `impacts`.
 # Set `enabled: false` to skip the calendar section entirely.
 calendar:
   enabled: true
-  currencies: [USD, EUR, JPY, GBP, CAD]   # G7 currencies (Italy/France/Germany are EUR)
+  currencies: [USD, EUR, JPY, GBP, CHF, CAD, AUD, NZD, SEK, NOK]   # G10 currencies
   impacts: [High, Medium]
