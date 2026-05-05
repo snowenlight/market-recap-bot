@@ -45,11 +45,9 @@ def build_body(
     now: datetime | None = None,
 ) -> str:
     now = now or datetime.now(JST)
-    sep = "─" * 30
 
     lines: list[str] = [
         f"【Market Recap】 {now:%Y/%m/%d} ({WEEKDAYS_JA[now.weekday()]}) NY引け",
-        sep,
         "",
     ]
 
@@ -64,7 +62,6 @@ def build_body(
         lines.append("")
 
     lines.extend([
-        sep,
         "データソース: Yahoo Finance",
         "本メールは個人プロジェクトの自動配信です。投資助言ではありません。",
     ])
