@@ -12,6 +12,10 @@ def send_email(
     subject: str,
     body: str,
 ) -> None:
+    # Gmail shows app passwords as "abcd efgh ijkl mnop"; copy-paste can
+    # include NBSPs that smtplib chokes on. Strip all whitespace.
+    app_password = "".join(app_password.split())
+
     msg = EmailMessage()
     msg["From"] = sender
     msg["To"] = recipient
