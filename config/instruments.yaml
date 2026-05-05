@@ -35,3 +35,11 @@ groups:
       - { symbol: "^GSPC", label: "S&P 500", kind: index }
       - { symbol: "^IXIC", label: "NASDAQ",  kind: index }
       - { symbol: "^DJI",  label: "Dow",     kind: index }
+
+# Economic calendar source: Forex Factory weekly XML feed.
+# Filters events to the next US business day matching `currencies` and `impacts`.
+# Set `enabled: false` to skip the calendar section entirely.
+calendar:
+  enabled: true
+  currencies: [USD, EUR, JPY, GBP, CAD]   # G7 currencies (Italy/France/Germany are EUR)
+  impacts: [High, Medium]

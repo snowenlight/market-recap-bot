@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 
+from recap.calendar import CalendarEvent
 from recap.config import Group
 from recap.data import Quote
 
@@ -39,12 +40,48 @@ def build_subject(now: datetime | None = None) -> str:
     return f"【Market Recap】{now:%Y/%m/%d} ({WEEKDAYS_JA[now.weekday()]}) NY引け"
 
 
+def _fmt_event(e: CalendarEvent) -> str:
+    parts: list[str] = []
+    if e.forecast:
+        parts.append(f"予想 {e.forecast}")
+    if e.previous:
+        parts.append(f"前回 {e.previous}")
+    suffix = f" ({' / '.join(parts)})" if parts else ""
+
+    time_part = e.time_label
+    if time_part not in ("終日", "未定"):
+        time_part = f"{time_part} ET"
+
+    return f"  {time_part}  {e.title}{suffix}"
+
+
+def build_calendar_section(
+    target_date: date,
+    events: list[CalendarEvent],
+    *,
+    fetch_failed: bool = False,
+) -> list[str]:
+    weekday = WEEKDAYS_JA[target_date.weekday()]
+    md = f"{target_date.month}/{target_date.day}"
+    header = f"■ 翌営業日 ({md}{weekday}) の注目指標"
+
+    if fetch_failed:
+        return [header, "  (取得失敗)", ""]
+    if not events:
+        return [header, "  予定なし", ""]
+    return [header, *(_fmt_event(e) for e in events), ""]
+
+
 def build_body(
     groups: list[Group],
     quotes_by_symbol: dict[str, Quote | None],
+    calendar_lines: list[str] | None = None,
+    *,
+    sources: list[str] | None = None,
     now: datetime | None = None,
 ) -> str:
     now = now or datetime.now(JST)
+    sources = sources or ["Yahoo Finance"]
 
     lines: list[str] = [
         f"【Market Recap】 {now:%Y/%m/%d} ({WEEKDAYS_JA[now.weekday()]}) NY引け",
@@ -61,8 +98,11 @@ def build_body(
                 lines.append(_fmt_quote(q))
         lines.append("")
 
+    if calendar_lines:
+        lines.extend(calendar_lines)
+
     lines.extend([
-        "データソース: Yahoo Finance",
+        f"データソース: {', '.join(sources)}",
         "本メールは個人プロジェクトの自動配信です。投資助言ではありません。",
     ])
     return "\n".join(lines)
