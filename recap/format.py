@@ -76,6 +76,7 @@ def build_body(
     groups: list[Group],
     quotes_by_symbol: dict[str, Quote | None],
     calendar_lines: list[str] | None = None,
+    summary: str | None = None,
     *,
     sources: list[str] | None = None,
     now: datetime | None = None,
@@ -87,6 +88,11 @@ def build_body(
         f"【Market Recap】 {now:%Y/%m/%d} ({WEEKDAYS_JA[now.weekday()]}) NY引け",
         "",
     ]
+
+    if summary:
+        lines.append("■ 本日のサマリー")
+        lines.append(summary)
+        lines.append("")
 
     for group in groups:
         lines.append(f"■ {group.name}")

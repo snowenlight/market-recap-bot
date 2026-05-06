@@ -17,10 +17,12 @@ from recap.calendar import (
 from recap.config import Config, load_config
 from recap.data import fetch_quote
 from recap.format import build_body, build_calendar_section, build_subject
+from recap.llm import generate_summary, load_prompt
 from recap.mail import send_email
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = ROOT / "config" / "instruments.yaml"
+DEFAULT_PROMPT = ROOT / "config" / "prompt.md"
 
 
 def _require_env(name: str) -> str:
@@ -48,6 +50,19 @@ def _build_calendar_lines(config: Config) -> list[str]:
     return build_calendar_section(target, matched)
 
 
+def _build_summary(prompt_path: Path) -> str | None:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("GEMINI_API_KEY not set; skipping summary", file=sys.stderr)
+        return None
+    try:
+        prompt = load_prompt(prompt_path)
+        return generate_summary(api_key=api_key, prompt=prompt)
+    except Exception as exc:
+        print(f"summary generation failed: {exc}", file=sys.stderr)
+        return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -56,9 +71,19 @@ def main() -> None:
         help="Path to instruments YAML",
     )
     parser.add_argument(
+        "--prompt",
+        default=str(DEFAULT_PROMPT),
+        help="Path to LLM prompt markdown",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the email to stdout instead of sending",
+    )
+    parser.add_argument(
+        "--no-summary",
+        action="store_true",
+        help="Skip the LLM summary step",
     )
     args = parser.parse_args()
 
@@ -72,15 +97,21 @@ def main() -> None:
             quotes_by_symbol[inst.symbol] = fetch_quote(inst)
 
     calendar_lines = _build_calendar_lines(config)
+
+    summary = None if args.no_summary else _build_summary(Path(args.prompt))
+
     sources = ["Yahoo Finance"]
     if config.calendar.enabled:
         sources.append("Forex Factory")
+    if summary:
+        sources.append("Gemini (Google Search)")
 
     subject = build_subject()
     body = build_body(
         config.groups,
         quotes_by_symbol,
         calendar_lines,
+        summary,
         sources=sources,
     )
 
