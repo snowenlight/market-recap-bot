@@ -16,7 +16,12 @@ from recap.calendar import (
 )
 from recap.config import Config, load_config
 from recap.data import fetch_quote
-from recap.format import build_body, build_calendar_section, build_subject
+from recap.format import (
+    build_body,
+    build_calendar_section,
+    build_html_body,
+    build_subject,
+)
 from recap.llm import generate_summary, load_prompt
 from recap.mail import send_email
 
@@ -114,10 +119,21 @@ def main() -> None:
         summary,
         sources=sources,
     )
+    html_body = build_html_body(
+        config.groups,
+        quotes_by_symbol,
+        calendar_lines,
+        summary,
+        sources=sources,
+    )
 
     if args.dry_run:
         print(f"Subject: {subject}\n")
+        print("--- text/plain ---")
         print(body)
+        if html_body:
+            print("\n--- text/html ---")
+            print(html_body)
         return
 
     sender = _require_env("GMAIL_ADDRESS")
@@ -130,6 +146,7 @@ def main() -> None:
         recipient=recipient,
         subject=subject,
         body=body,
+        html_body=html_body,
     )
     print(f"sent to {recipient}")
 

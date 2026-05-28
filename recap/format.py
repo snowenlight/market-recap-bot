@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 from datetime import date, datetime, timezone, timedelta
 
 from recap.calendar import CalendarEvent
@@ -91,7 +92,10 @@ def build_body(
 
     if summary:
         lines.append("■ 本日のサマリー")
-        lines.append(summary)
+        if _is_html(summary):
+            lines.append("(HTML版メールを参照してください)")
+        else:
+            lines.append(summary)
         lines.append("")
 
     for group in groups:
@@ -112,3 +116,86 @@ def build_body(
         "本メールは個人プロジェクトの自動配信です。投資助言ではありません。",
     ])
     return "\n".join(lines)
+
+
+def _is_html(text: str) -> bool:
+    head = text.lstrip()[:200].lower()
+    return head.startswith("<!doctype") or head.startswith("<html")
+
+
+def _build_market_block_html(
+    groups: list[Group],
+    quotes_by_symbol: dict[str, Quote | None],
+    calendar_lines: list[str] | None,
+) -> str:
+    lines: list[str] = []
+    for group in groups:
+        lines.append(f"■ {group.name}")
+        for inst in group.instruments:
+            q = quotes_by_symbol.get(inst.symbol)
+            lines.append(_fmt_quote(q) if q is not None else _fmt_missing(inst.label))
+        lines.append("")
+    if calendar_lines:
+        lines.extend(calendar_lines)
+    return html.escape("\n".join(lines).rstrip())
+
+
+def _market_section_html(
+    groups: list[Group],
+    quotes_by_symbol: dict[str, Quote | None],
+    calendar_lines: list[str] | None,
+    sources: list[str],
+) -> str:
+    market_pre = _build_market_block_html(groups, quotes_by_symbol, calendar_lines)
+    sources_line = html.escape(f"データソース: {', '.join(sources)}")
+    return (
+        '\n      <tr><td style="border-top:1px solid #dddddd;"></td></tr>\n'
+        '      <tr><td style="padding:20px 24px;">\n'
+        '        <h2 style="font-size:16px; color:#1a3a5c; margin:0 0 12px 0;">7. マーケット数値 (Yahoo Finance / Forex Factory)</h2>\n'
+        f'        <pre style="font-family:\'Courier New\',Courier,monospace; font-size:13px; margin:0; white-space:pre; color:#333333;">{market_pre}</pre>\n'
+        f'        <p style="margin:12px 0 0 0; font-size:12px; color:#888888;">{sources_line}<br>本メールは個人プロジェクトの自動配信です。投資助言ではありません。</p>\n'
+        '      </td></tr>\n'
+    )
+
+
+def build_html_body(
+    groups: list[Group],
+    quotes_by_symbol: dict[str, Quote | None],
+    calendar_lines: list[str] | None = None,
+    summary: str | None = None,
+    *,
+    sources: list[str] | None = None,
+    now: datetime | None = None,
+) -> str | None:
+    """Return an HTML body for the email, or None when no HTML rendering is needed."""
+    sources = sources or ["Yahoo Finance"]
+    now = now or datetime.now(JST)
+
+    market_html = _market_section_html(groups, quotes_by_symbol, calendar_lines, sources)
+
+    if summary and _is_html(summary):
+        # Gemini returns a complete HTML document; inject our market section
+        # just before </body> so the styled template stays intact.
+        marker = "</body>"
+        idx = summary.lower().rfind(marker)
+        if idx != -1:
+            return summary[:idx] + market_html + summary[idx:]
+        return summary + market_html
+
+    # Fallback: build a minimal HTML wrapper.
+    title = html.escape(f"Market Recap {now:%Y/%m/%d}")
+    summary_block = (
+        f'<pre style="font-family:\'Courier New\',Courier,monospace; font-size:13px; white-space:pre;">{html.escape(summary)}</pre>'
+        if summary
+        else ""
+    )
+    return (
+        '<!DOCTYPE html>\n'
+        '<html lang="ja"><head><meta charset="UTF-8"><title>'
+        f'{title}</title></head>\n'
+        '<body style="font-family:Arial,\'Helvetica Neue\',Helvetica,sans-serif; line-height:1.6; color:#333333;">\n'
+        '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;">\n'
+        f'{summary_block}\n{market_html}\n'
+        '</table>\n'
+        '</body></html>\n'
+    )
